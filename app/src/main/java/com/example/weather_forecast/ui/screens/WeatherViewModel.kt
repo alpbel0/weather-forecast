@@ -9,8 +9,15 @@ import com.example.weather_forecast.data.repository.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+sealed interface SearchType {
+    data object None : SearchType
+    data class City(val cityName: String) : SearchType
+    data class Location(val latitude: Double, val longitude: Double) : SearchType
+}
 
 class WeatherViewModel(
     private val repository: WeatherRepository,
@@ -18,7 +25,7 @@ class WeatherViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<WeatherUiState>(WeatherUiState.Idle)
-    val uiState: StateFlow<WeatherUiState> = _uiState
+    val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
     val history: StateFlow<List<CityHistory>> = repository.history
         .stateIn(
@@ -33,6 +40,8 @@ class WeatherViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = true
         )
+
+    private var lastSearchType: SearchType = SearchType.None
 
     init {
         loadLastSearchedCity()
@@ -54,9 +63,9 @@ class WeatherViewModel(
     }
 
     fun searchCity(cityName: String) {
+        lastSearchType = SearchType.City(cityName)
         viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
-
             repository.getWeatherForCity(cityName)
                 .onSuccess { weatherResult ->
                     _uiState.value = WeatherUiState.Success(weatherResult)
@@ -68,9 +77,9 @@ class WeatherViewModel(
     }
 
     fun searchByLocation(latitude: Double, longitude: Double) {
+        lastSearchType = SearchType.Location(latitude, longitude)
         viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
-
             repository.getWeatherForCoordinates(latitude, longitude)
                 .onSuccess { weatherResult ->
                     _uiState.value = WeatherUiState.Success(weatherResult)
@@ -78,6 +87,14 @@ class WeatherViewModel(
                 .onFailure { error ->
                     _uiState.value = WeatherUiState.Error(error.message ?: "Bilinmeyen hata")
                 }
+        }
+    }
+
+    fun refresh() {
+        when (val type = lastSearchType) {
+            is SearchType.City -> searchCity(type.cityName)
+            is SearchType.Location -> searchByLocation(type.latitude, type.longitude)
+            is SearchType.None -> { /* henüz hiç arama yapılmadı */ }
         }
     }
 
