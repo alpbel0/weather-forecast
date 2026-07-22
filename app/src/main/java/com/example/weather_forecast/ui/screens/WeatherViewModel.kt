@@ -1,17 +1,18 @@
 package com.example.weather_forecast.ui.screens
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.weather_forecast.data.local.CityHistory
 import com.example.weather_forecast.data.local.UserPreferencesRepository
 import com.example.weather_forecast.data.repository.WeatherRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed interface SearchType {
     data object None : SearchType
@@ -19,7 +20,8 @@ sealed interface SearchType {
     data class Location(val latitude: Double, val longitude: Double) : SearchType
 }
 
-class WeatherViewModel(
+@HiltViewModel
+class WeatherViewModel @Inject constructor(
     private val repository: WeatherRepository,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
@@ -104,15 +106,5 @@ class WeatherViewModel(
 
     fun setLoading() {
         _uiState.value = WeatherUiState.Loading
-    }
-}
-
-class WeatherViewModelFactory(
-    private val repository: WeatherRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return WeatherViewModel(repository, userPreferencesRepository) as T
     }
 }

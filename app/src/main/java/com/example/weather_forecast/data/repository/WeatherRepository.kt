@@ -5,8 +5,9 @@ import com.example.weather_forecast.data.local.CityHistoryDao
 import com.example.weather_forecast.data.network.ForecastApiService
 import com.example.weather_forecast.data.network.GeocodingApiService
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class WeatherRepository(
+class WeatherRepository @Inject constructor(
     private val geocodingApi: GeocodingApiService,
     private val forecastApi: ForecastApiService,
     private val cityHistoryDao: CityHistoryDao
